@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Loader from './Loader/Loader';
@@ -6,36 +6,33 @@ import Button from './Button/Button';
 import Modal from './Modal/Modal';
 import { fetchGalleryImage, PER_PAGE } from './api';
 
-const INITIAL_STATE = {
-  images: [],
-  query: '',
-  page: 1,
-  perPage: PER_PAGE,
-  largeImage: '',
-  isLoading: false,
-  isModal: false,
-  totalHits: 0,
-  totalPages: 1,
-};
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [largeImage, setLargeImage] = useState('');
+  const [isLoading, setLoading] = useState(false);
+  const [isModal, setModal] = useState(false);
+  const [totalHits, setTotalHits] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
-export class App extends Component {
-  state = {
-    ...INITIAL_STATE,
-  };
+  useEffect(() => {
+    const fetchImages = async () => {
+      setLoading(true);
+      const response = await fetchGalleryImage(query);
 
-  async componentDidMount() {
-    this.setState({ isLoading: true });
-    const response = await fetchGalleryImage(this.state.query);
+      setImages(response.hits);
 
-    this.setState({ images: response.hits });
+      setTimeout(async () => {
+        setLoading(false);
+      }, 200);
+    };
 
-    setTimeout(async () => {
-      this.setState({ isLoading: false });
-    }, 700);
-  }
+    fetchImages();
+  }, [query]);
 
-  getImages = async (query, page) => {
-    this.setState({ isLoading: true });
+  const getImages = async (query, page) => {
+    setLoading(true);
 
     const response = await fetchGalleryImage(query, page);
 
@@ -52,7 +49,7 @@ export class App extends Component {
 
       const totalPages = Math.ceil(response.totalHits / PER_PAGE);
 
-      const previousImages = this.state.images;
+      const previousImages = images;
 
       if (page !== 1) {
         previousImages.forEach(el => {
@@ -64,70 +61,57 @@ export class App extends Component {
         });
       }
 
-      this.setState(prevState => {
+      setImages(prevImages => {
         let renderGallery = [];
 
         page > 1
-          ? (renderGallery = [...prevState.images, ...images])
+          ? (renderGallery = [...prevImages, ...images])
           : (renderGallery = [...images]);
 
-        return {
-          images: renderGallery,
-          query,
-          page,
-          isLoading: false,
-          totalHits: response.totalHits,
-          totalPages,
-        };
+        return renderGallery;
       });
+      setQuery(query);
+      setPage(page);
+      setLoading(false);
+      setTotalHits(response.totalHits);
+      setTotalPages(totalPages);
     } else {
-      this.setState({ ...INITIAL_STATE });
+      setImages([]);
+      setQuery('');
+      setPage(1);
+      setLoading(false);
+      setTotalHits(0);
+      setTotalPages(1);
     }
   };
 
-  openModal = largeImage => {
-    this.setState({ isModal: true, largeImage: largeImage });
+  const openModal = largeImage => {
+    setModal(true);
+    setLargeImage(largeImage);
   };
-  closeModal = () => {
-    this.setState({ isModal: false, largeImage: '' });
+  const closeModal = () => {
+    setModal(false);
+    setLargeImage('');
   };
 
-  render() {
-    const {
-      query,
-      page,
-      images,
-      totalHits,
-      isLoading,
-      largeImage,
-      isModal,
-      totalPages,
-    } = this.state;
-
-    return (
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr',
-          gridGap: '16px',
-          paddingBottom: '24px',
-        }}
-      >
-        <Searchbar getImages={value => this.getImages(value, 1)} />
-        {isLoading && <Loader />}
-        <ImageGallery images={images} openModal={this.openModal} />
-        {isModal && (
-          <Modal closeModal={this.closeModal} largeImage={largeImage} />
-        )}
-        {totalHits > 0 && page < totalPages && page !== totalPages ? (
-          <Button
-            page={page}
-            onClick={nextPage => this.getImages(query, nextPage)}
-          />
-        ) : (
-          ''
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr',
+        gridGap: '16px',
+        paddingBottom: '24px',
+      }}
+    >
+      <Searchbar getImages={getImages} />
+      {isLoading && <Loader />}
+      <ImageGallery images={images} openModal={openModal} />
+      {isModal && <Modal closeModal={closeModal} largeImage={largeImage} />}
+      {totalHits > 0 && page < totalPages && page !== totalPages ? (
+        <Button onClick={getImages} />
+      ) : (
+        ''
+      )}
+    </div>
+  );
+};

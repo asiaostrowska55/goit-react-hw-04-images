@@ -1,34 +1,35 @@
-import { Component } from 'react';
 import PropTypes from 'prop-types';
 import css from './Button.module.css';
 
-// const Button = props => {
-//   const { loadMore } = props;
+const Button = props => {
+  const handleClick = () => {
+    const nextPage = props.page + 1;
+    props.onClick(nextPage);
+  };
 
+  return (
+    <button type="button" className={css.button} onClick={handleClick}>
+      Load More
+    </button>
+  );
+};
+
+Button.propTypes = {
+  onClick: PropTypes.func,
+};
+
+export default Button;
+
+// const Button = ({ onClick }) => {
 //   return (
-//     <button type="button" className={css.button} onClick={loadMore}>
+//     <button type="button" className={css.button} onClick={onClick}>
 //       Load More
 //     </button>
 //   );
 // };
-class Button extends Component {
-  handleClick = () => {
-    const { page } = this.props;
-    const nextPage = page + 1;
-    this.props.onClick(nextPage);
-  };
-  render() {
-    return (
-      <button type="button" className={css.button} onClick={this.handleClick}>
-        Load More
-      </button>
-    );
-  }
-}
 
-Button.propTypes = {
-  onClick: PropTypes.func,
-  page: PropTypes.number,
-};
+// Button.propTypes = {
+//   onClick: PropTypes.func,
+// };
 
-export default Button;
+// export default Button;
