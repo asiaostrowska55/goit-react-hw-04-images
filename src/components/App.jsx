@@ -16,72 +16,58 @@ export const App = () => {
   const [totalHits, setTotalHits] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  useEffect(() => {
-    const fetchImages = async () => {
+  const handleSubmit = async event => {
+    event.preventDefault();
+    const inputValue = event.target.inputQuery.value;
+    setQuery(inputValue.trim().toLowerCase());
+    try {
       setLoading(true);
-      const response = await fetchGalleryImage(query);
+
+      const response = await fetchGalleryImage(inputValue, 1);
 
       setImages(response.hits);
-
-      setTimeout(async () => {
-        setLoading(false);
-      }, 200);
-    };
-
-    fetchImages();
-  }, [query]);
-
-  const getImages = async (query, page) => {
-    setLoading(true);
-
-    const response = await fetchGalleryImage(query, page);
-
-    if (response.totalHits > 0) {
-      let images = [];
-      response.hits.forEach(el => {
-        images.push({
-          id: el.id,
-          webformatURL: el.webformatURL,
-          largeImageURL: el.largeImageURL,
-          tags: el.tags,
-        });
-      });
-
-      const totalPages = Math.ceil(response.totalHits / PER_PAGE);
-
-      const previousImages = images;
-
-      if (page !== 1) {
-        previousImages.forEach(el => {
-          images.forEach((photo, index, array) => {
-            if (el.id === photo.id) {
-              array.splice(index, 1);
-            }
-          });
-        });
-      }
-
-      setImages(prevImages => {
-        let renderGallery = [];
-
-        page > 1
-          ? (renderGallery = [...prevImages, ...images])
-          : (renderGallery = [...images]);
-
-        return renderGallery;
-      });
-      setQuery(query);
-      setPage(page);
-      setLoading(false);
       setTotalHits(response.totalHits);
-      setTotalPages(totalPages);
-    } else {
-      setImages([]);
-      setQuery('');
-      setPage(1);
+      setTotalPages(Math.ceil(response.totalHits / PER_PAGE));
+
+      if (response.totalHits > PER_PAGE && query !== inputValue) {
+        setPage(2);
+      }
+    } catch (error) {
+      console.log('Error!', error);
+    } finally {
       setLoading(false);
-      setTotalHits(0);
-      setTotalPages(1);
+    }
+  };
+
+  const getImages = async e => {
+    e.preventDefault();
+    try {
+      const response = await fetchGalleryImage(query, page);
+      setImages(response.hits);
+      setTotalHits(response.totalHits);
+      setTotalPages(Math.ceil(response.totalHits / PER_PAGE));
+
+      if (response.hits.length > 0) {
+        setImages([...images, ...response.hits]);
+        setLoading(false);
+        setPage(page + 1);
+
+        const previousImages = images;
+
+        if (page !== 1) {
+          previousImages.forEach(el => {
+            images.forEach((photo, index, array) => {
+              if (el.id === photo.id) {
+                array.splice(index, 1);
+              }
+            });
+          });
+        }
+      }
+    } catch (error) {
+      console.log('Error!', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -103,7 +89,7 @@ export const App = () => {
         paddingBottom: '24px',
       }}
     >
-      <Searchbar getImages={getImages} />
+      <Searchbar handleSubmit={handleSubmit} query={query} page={page} />
       {isLoading && <Loader />}
       <ImageGallery images={images} openModal={openModal} />
       {isModal && <Modal closeModal={closeModal} largeImage={largeImage} />}

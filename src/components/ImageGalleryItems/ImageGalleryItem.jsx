@@ -2,11 +2,14 @@ import PropTypes from 'prop-types';
 import css from './ImageGalleryItem.module.css';
 
 const ImageGalleryItem = props => {
-  const { largeImageURL, webformatURL, id, tags, openModal } = props;
+  const { id, largeImageURL, webformatURL, tags, openModal } = props;
 
   return (
     <li className={css.galleryItem} key={id}>
       <img
+        key={id}
+        name={largeImageURL}
+        loading="lazy"
         className={css.image}
         src={webformatURL}
         alt={tags}
